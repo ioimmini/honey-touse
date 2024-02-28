@@ -1,4 +1,7 @@
 module.exports = {
-  commentDAO: require("./commentDAO"),
-  postDAO: require("./postDAO"),
+  categoryDAO: require('./categoryDAO'),
+  productDAO: require('./productDAO'),
+  optionDAO: require('./optionDAO'),
+  orderDAO: require('./orderDAO'),
+  userDAO: require('./userDAO'),
 };

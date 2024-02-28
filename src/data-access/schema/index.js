@@ -1,7 +1,15 @@
-const commentSchema = require("./comment");
-const postSchema = require("./post");
+const categorySchema = require('./category');
+const productSchema = require('./product');
+const optionSchema = require('./option');
+const orderSchema = require('./order');
+const userSchema = require('./user');
+const emailVerificationSchema = require('./emailVerification');
 
 module.exports = {
-  commentSchema,
-  postSchema,
+  categorySchema,
+  productSchema,
+  optionSchema,
+  orderSchema,
+  userSchema,
+  emailVerificationSchema
 };
