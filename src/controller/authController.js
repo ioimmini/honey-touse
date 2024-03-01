@@ -1,156 +1,38 @@
-const { authService } = require('../service');
-const utils = require('../misc/utils');
-const jwt = require('jsonwebtoken');
-const config = require('../config');
+const dotenv = require('dotenv');
+const AppError = require('../misc/AppError');
+const commonErrors = require('../misc/commonErrors');
 
-const authController = {
-  // 회원가입 컨트롤러
-  async postSignUp(req, res, next) {
-    try {
-      const { name, phoneNumber, email, password, address, addressDetail } =
-        req.body;
+process.env.NODE_ENV = process.env.NODE_ENV ?? 'development';
+console.log(
+  `어플리케이션 서버를 다음 환경으로 시작합니다: ${process.env.NODE_ENV}`,
+);
 
-      const newUser = await authService.signUp({
-        name,
-        phoneNumber,
-        email,
-        plainPassword: password,
-        address,
-        addressDetail,
-        role: 'user', // 기본적으로 일반회원은 'user'
-      });
+const envFound = dotenv.config(); // dotenv를 사용하여 환경 변수도 읽어온다.
+// .env 파일이 없으면 에러를 던진다
+if (envFound.error) {
+  throw new AppError(commonErrors.configError, "Couldn't find .env file");
+}
 
-      res.status(201).json(utils.buildResponse(newUser));
-    } catch (error) {
-      next(error);
-    }
-  },
+// mongoDB 연결을 위한 URI값이 있는 지 체크
+if (process.env.MONGODB_URI === undefined) {
+  throw new AppError(
+    commonErrors.configError,
+    '어플리케이션을 시작하려면 Mongo DB URI(MONGODB_URI) 환경변수가 필요합니다.',
+  );
+}
 
-  // 로그인 컨트롤러
-  async postSignIn(req, res, next) {
-    try {
-      const { email, password } = req.body;
-      const token = await authService.signIn({
-        email,
-        plainPassword: password,
-      });
+module.exports = {
+  applicationName: process.env.APPLICATION_NAME ?? 'app', // 어플리케이션 이름
 
-      res.status(201).json(utils.buildResponse(token));
-    } catch (error) {
-      next(error);
-    }
-  },
+  port: parseInt(process.env.PORT ?? '3000', 10), // 어플리케이션이 바인딩되는 포트
 
-  // 개인정보 수정 컨트롤러
-  async patchUpdateProfile(req, res, next) {
-    try {
-      const { email, address, addressDetail, password } = req.body;
+  mongoDBUri: process.env.MONGODB_URI, // mongoDB 연결 주소
 
-      const data = await authService.updateProfile({
-        email,
-        address,
-        addressDetail,
-        password,
-      });
+  jwtSecret: process.env.SECRET_KEY, // jwtSecret 값이 환경변수 SECRET_KEY로 설정됨.
 
-      res.status(200).json(utils.buildResponse(data));
-    } catch (error) {
-      next(error);
-    }
-  },
+  adminEmail: process.env.ADMIN_EMAIL, // 관리자 계정 이메일 주소
 
-  // 모든 회원 정보 조회 컨트롤러
-  async getAllProfile(req, res, next) {
-    try {
-      const data = await authService.getAllProfile();
-      res.status(200).json(utils.buildResponse(data));
-    } catch (error) {
-      next(error);
-    }
-  },
+  adminLoginpw: process.env.ADMIN_Login_PW, // 관리자 계정 로그인 비밀번호
 
-  // 개인정보 조회 컨트롤러
-  async getProfile(req, res, next) {
-    try {
-      const token = req.headers.authorization.split(' ')[1];
-
-      // 해당 token이 정상적인 token인지 확인
-      const secretKey = config.jwtSecret || 'secretkey';
-      const jwtDecoded = jwt.verify(token, secretKey);
-
-      // 토큰에서 이메일 추출
-      const { email } = jwtDecoded;
-
-      const userProfile = await authService.getProfile(email);
-
-      res.status(200).json(utils.buildResponse(userProfile));
-    } catch (error) {
-      next(error);
-    }
-  },
-
-  // 회원탈퇴 컨트롤러
-  async postDeleteProfile(req, res, next) {
-    try {
-      const token = req.headers.authorization.split(' ')[1];
-
-      // 해당 token이 정상적인 token인지 확인
-      const secretKey = config.jwtSecret || 'secretkey';
-      const jwtDecoded = jwt.verify(token, secretKey);
-
-      // 토큰에서 이메일 추출
-      const { email } = jwtDecoded;
-
-      const data = await authService.deleteProfile(email);
-
-      res.status(200).json(utils.buildResponse(data));
-    } catch (error) {
-      next(error);
-    }
-  },
-
-  // 이메일 인증 요청 컨트롤러
-  async postEmailVerification(req, res, next) {
-    try {
-      const { email } = req.body;
-
-      const verificationCode = await authService.sendVerificationCode(email);
-
-      res.status(200).json(utils.buildResponse(verificationCode));
-    } catch (error) {
-      next(error);
-    }
-  },
-
-  // 이메일 인증 확인 컨트롤러
-  async postVerifyEmail(req, res, next) {
-    try {
-      const { inputNumber, email } = req.body;
-
-      const result = await authService.verifyEmail(inputNumber, email);
-
-      res.status(200).json(utils.buildResponse(result));
-    } catch (error) {
-      next(error);
-    }
-  },
-
-  // 새로운 비밀번호로 변경 확인 컨트롤러
-  async postChangePassword(req, res, next) {
-    try {
-      const { email, newPassword, newPasswordConfirm } = req.body;
-
-      const result = await authService.changePassword(
-        email,
-        newPassword,
-        newPasswordConfirm,
-      );
-
-      res.status(201).json(utils.buildResponse(result));
-    } catch (error) {
-      next(error);
-    }
-  },
+  adminPW: process.env.ADMIN_PW, // 관리자 계정 구글 앱 비밀번호 (메일 발송용)
 };
-
-module.exports = authController;
